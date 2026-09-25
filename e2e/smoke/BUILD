@@ -83,6 +83,8 @@ oci_image(
     tars = [
         # This target contains all the installed packages.
         "@bullseye//:flat",
+        # The links the packages' postinst scripts would have made with update-alternatives.
+        "@bullseye//:update_alternatives",
         ":sh",
         ":passwd",
         ":group",

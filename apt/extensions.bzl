@@ -704,6 +704,26 @@ You can use the package like so: `@<REPO>//<PACKAGE>/<ARCH>:<TARGET>`.
 
 E.g. for the previous example, you could use `@bullseye//perl/amd64:data`.
 
+### update-alternatives
+
+Packages' maintainer scripts are not run, so the links a package's `postinst`
+makes with `update-alternatives --install` (`/usr/bin/awk` from `mawk`,
+`/usr/bin/cc` from `gcc`, `libblas.so.3` from a BLAS) are not in its `data`.
+`@<dependency_set>//:update_alternatives` reads them from the packages'
+`postinst` scripts without running them and makes them, choosing between
+packages that provide the same alternative as `update-alternatives` does, by
+priority. Add it to an image's `tars` next to the packages:
+
+```starlark
+oci_image(
+    name = "image",
+    tars = [
+        "@noble//:flat",
+        "@noble//:update_alternatives",
+    ],
+)
+```
+
 ### Lockfiles
 
 As mentioned, the macro can be used without a lock because the lock will be

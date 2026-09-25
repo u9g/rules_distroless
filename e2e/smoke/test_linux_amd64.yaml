@@ -19,6 +19,14 @@ commandTests:
       - perl/now 5\.32\.1-4\+deb11u3 amd64 \[installed,local\]
       - tzdata/now 2024a-0\+deb11u1 all \[installed,local\]
       - nvidia-kernel-common/now 20151021\+13 amd64 \[installed,local\]
+  - name: "awk, which only mawk's postinst links"
+    command: "awk"
+    args: ["BEGIN { print \"hello from awk\" }"]
+    expectedOutput: ["hello from awk"]
+  - name: "awk links through /etc/alternatives"
+    command: "readlink"
+    args: ["/usr/bin/awk"]
+    expectedOutput: ["/etc/alternatives/awk"]
   - name: "whoami"
     command: "whoami"
     expectedOutput: [r00t]

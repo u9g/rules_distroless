@@ -8,6 +8,7 @@ load(":lockfile_test.bzl", "lockfile_tests")
 load(":release_test.bzl", "release_tests")
 load(":resolution_test.bzl", "resolution_tests")
 load(":translate_dependency_set_test.bzl", "translate_dependency_set_tests")
+load(":update_alternatives_test.bzl", "update_alternatives_tests")
 load(":util_test.bzl", "util_tests")
 load(":version_test.bzl", "version_tests")
 
@@ -34,3 +35,5 @@ translate_dependency_set_tests()
 extensions_tests()
 
 util_tests()
+
+update_alternatives_tests()

@@ -1,7 +1,7 @@
 "unit tests for dependency set translation"
 
 load("@bazel_skylib//lib:unittest.bzl", "asserts", "unittest")
-load("//apt/private:translate_dependency_set.bzl", "check_template_variable_collision", "package_deps_for_architecture", "resolve_package_template")
+load("//apt/private:translate_dependency_set.bzl", "check_template_variable_collision", "package_deps_for_architecture", "resolve_package_template", "transitive_package_keys")
 load("//apt/private:util.bzl", "util")
 
 _TEST_SUITE_PREFIX = "translate_dependency_set/"
@@ -149,8 +149,48 @@ def _check_template_variable_collision_test(ctx):
 
 check_template_variable_collision_test = unittest.make(_check_template_variable_collision_test)
 
+# update_alternatives reads the postinst of every package a dependency set
+# installs, not only those it names: mawk, which makes /usr/bin/awk, is
+# usually something else's dependency.
+def _transitive_package_keys_test(ctx):
+    env = unittest.begin(ctx)
+
+    packages = {
+        "/repo/app:amd64=1.0": {
+            "architecture": "amd64",
+            "depends_on": ["/repo/libfoo:amd64=1.0", "/repo/libfoo:arm64=1.0", "/repo/base:all=1.0"],
+        },
+        "/repo/libfoo:amd64=1.0": {
+            "architecture": "amd64",
+            "depends_on": ["/repo/mawk:amd64=1.0", "/repo/app:amd64=1.0"],
+        },
+        "/repo/libfoo:arm64=1.0": {
+            "architecture": "arm64",
+            "depends_on": [],
+        },
+        "/repo/base:all=1.0": {
+            "architecture": "all",
+            "depends_on": ["/repo/mawk:amd64=1.0"],
+        },
+        "/repo/mawk:amd64=1.0": {
+            "architecture": "amd64",
+            "depends_on": [],
+        },
+    }
+
+    asserts.equals(
+        env,
+        ["/repo/app:amd64=1.0", "/repo/libfoo:amd64=1.0", "/repo/base:all=1.0", "/repo/mawk:amd64=1.0"],
+        transitive_package_keys(packages, ["/repo/app:amd64=1.0"], "amd64"),
+    )
+
+    return unittest.end(env)
+
+transitive_package_keys_test = unittest.make(_transitive_package_keys_test)
+
 def translate_dependency_set_tests():
     no_mixed_architectures_test(name = _TEST_SUITE_PREFIX + "no_mixed_architectures")
     package_repo_name_modes_test(name = _TEST_SUITE_PREFIX + "package_repo_name_modes")
     resolve_package_template_test(name = _TEST_SUITE_PREFIX + "resolve_package_template")
     check_template_variable_collision_test(name = _TEST_SUITE_PREFIX + "check_template_variable_collision")
+    transitive_package_keys_test(name = _TEST_SUITE_PREFIX + "transitive_package_keys")
