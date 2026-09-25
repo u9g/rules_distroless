@@ -3,10 +3,11 @@
 load("@bazel_lib//lib:utils.bzl", "propagate_common_rule_attributes")
 load("@bazel_skylib//rules:write_file.bzl", "write_file")
 load("@tar.bzl//tar:tar.bzl", "tar")
+load(":base_file.bzl", "base_file")
 load(":tar.bzl", "tar_lib")
 load(":util.bzl", "util")
 
-def group(name, entries, time = "0.0", mode = "0644", **kwargs):
+def group(name, entries, time = "0.0", mode = "0644", base = None, **kwargs):
     """
     Create a group file from array of dicts.
 
@@ -17,11 +18,16 @@ def group(name, entries, time = "0.0", mode = "0644", **kwargs):
         entries: an array of dicts which will be serialized into single group file.
         mode: mode for the entry
         time: time for the entry
+        base: an image to add the entries to, as `groupadd` would: an OCI image layout,
+            such as `oci.pull` or `oci_image` makes, or a tar of a root filesystem.
+            The file is then the base's /etc/group, from the newest layer that has it,
+            followed by the entries, none of which may name a group the base has.
+            Without it, the file has only the entries.
         **kwargs: other named arguments to expanded targets. see [common rule attributes](https://bazel.build/reference/be/common-definitions#common-attributes).
     """
     common_kwargs = propagate_common_rule_attributes(kwargs)
     write_file(
-        name = "%s_content" % name,
+        name = "%s_entries" % name if base else "%s_content" % name,
         content = [
             # See https://www.ibm.com/docs/en/aix/7.2?topic=files-etcgroup-file#group_security__a3179518__title__1
             ":".join([
@@ -32,9 +38,19 @@ def group(name, entries, time = "0.0", mode = "0644", **kwargs):
             ])
             for entry in entries
         ] + [""],
-        out = "%s.content" % name,
+        out = "%s.entries" % name if base else "%s.content" % name,
         **common_kwargs
     )
+
+    if base:
+        base_file(
+            name = "%s_content" % name,
+            base = base,
+            path = "/etc/group",
+            lines = ":%s_entries" % name,
+            out = "%s.content" % name,
+            **common_kwargs
+        )
 
     mtree = tar_lib.create_mtree()
 

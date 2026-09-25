@@ -2,6 +2,7 @@ load("@bazel_lib//:bzl_library.bzl", "bzl_library")
 load("@rules_java//java:defs.bzl", "java_binary")
 
 exports_files([
+    "base_file.sh",
     "cacerts.sh",
     "locale.sh",
     "flatten.sh",
@@ -15,6 +16,13 @@ java_binary(
     ],
     main_class = "JavaKeyStore",
     visibility = ["//visibility:public"],
+)
+
+bzl_library(
+    name = "base_file",
+    srcs = ["base_file.bzl"],
+    visibility = ["//distroless:__subpackages__"],
+    deps = [":tar"],
 )
 
 bzl_library(
@@ -36,6 +44,7 @@ bzl_library(
     srcs = ["group.bzl"],
     visibility = ["//distroless:__subpackages__"],
     deps = [
+        ":base_file",
         "@bazel_lib//lib:expand_template",
         "@bazel_lib//lib:utils",
         "@bazel_skylib//rules:write_file",
@@ -60,6 +69,7 @@ bzl_library(
     srcs = ["passwd.bzl"],
     visibility = ["//distroless:__subpackages__"],
     deps = [
+        ":base_file",
         ":util",
         "@bazel_lib//lib:expand_template",
         "@bazel_lib//lib:utils",
